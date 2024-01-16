@@ -6,67 +6,67 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>QR Code Scanner</title>
 
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background-color: #f2f2f2;
+        }
+
+        .container {
+            text-align: center;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        #qr-video {
+            width: 100%;
+            max-width: 400px;
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+
+        .result-container {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .actions-container {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .action-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #4caf50;
+            color: #fff;
+            transition: background-color 0.3s;
+        }
+
+        .action-button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
-<style>
-    body {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-    font-family: 'Arial', sans-serif;
-    background-color: #f2f2f2;
-}
 
-.container {
-    text-align: center;
-    background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    padding: 20px;
-}
-
-#qr-video {
-    width: 100%;
-    max-width: 400px;
-    border: 2px solid #333;
-    border-radius: 8px;
-}
-
-.result-container {
-    margin-top: 20px;
-    font-weight: bold;
-}
-
-.actions-container {
-    margin-top: 20px;
-    display: flex;
-    justify-content: space-around;
-}
-
-.action-button {
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-    border: none;
-    border-radius: 5px;
-    background-color: #4caf50;
-    color: #fff;
-    transition: background-color 0.3s;
-}
-
-.action-button:hover {
-    background-color: #45a049;
-}
-</style>
 <body>
     <div class="container">
         <video id="qr-video" playsinline></video>
         <div id="result" class="result-container"></div>
         <div id="actions" class="actions-container">
             <!-- <button id="openInNewTabBtn">Open in New Tab</button> -->
-            <button id="clearResultBtn">Clear Result</button>
-
+            <button id="clearResultBtn" class="action-button">Clear Result</button>
         </div>
     </div>
 
@@ -76,17 +76,26 @@
             const video = document.getElementById("qr-video");
             const resultDiv = document.getElementById("result");
 
-            let scanner = new Instascan.Scanner({ video: video });
+            let scanner;
 
-            scanner.addListener("scan", function (content) {
-                resultDiv.textContent = "QR Code Content: " + content;
-                // You can perform further actions with the content here
-            });
+            function startScanner(cameraId) {
+                scanner = new Instascan.Scanner({ video: video, camera: cameraId });
+
+                scanner.addListener("scan", function (content) {
+                    resultDiv.textContent = "QR Code Content: " + content;
+                });
+
+                scanner.start();
+            }
 
             Instascan.Camera.getCameras()
                 .then(function (cameras) {
                     if (cameras.length > 0) {
-                        scanner.start(cameras[0]);
+                        // Choose the back camera if available, otherwise use the first camera
+                        const backCamera = cameras.find((camera) => camera.name.toLowerCase().includes("back"));
+                        const defaultCamera = backCamera || cameras[0];
+
+                        startScanner(defaultCamera.id);
                     } else {
                         console.error("No cameras found.");
                     }
@@ -95,26 +104,11 @@
                     console.error(e);
                 });
 
-            function openInNewTab() {
-                const qrData = resultDiv.innerText;
-                if (qrData && isValidURL(qrData)) {
-                    window.open(qrData, "_blank");
-                }
-            }
-
             function clearResult() {
                 resultDiv.innerText = "";
             }
 
-            function isValidURL(url) {
-                const pattern = /^(https?:\/\/)/;
-                return pattern.test(url);
-            }
-
             // Add event listeners to buttons
-            document
-                .getElementById("openInNewTabBtn")
-                .addEventListener("click", openInNewTab);
             document
                 .getElementById("clearResultBtn")
                 .addEventListener("click", clearResult);
